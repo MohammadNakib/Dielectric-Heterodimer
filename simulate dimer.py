@@ -41,7 +41,7 @@ ax.set_xlabel('Wavelength (nm)')
 ax.set_ylabel('Polarizability |α(λ)|')
 ax.legend()
 ax.set_title('Mie Coefficients for Dielectric Spheres')
-ax.grid(True)
+ax.grid(False)
 
 # Save the figure with a unique name
 save_figure(fig, "mie_coefficients", figs_dir)
