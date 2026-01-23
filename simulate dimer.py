@@ -2,6 +2,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import pandas as pd
+from scipy.interpolate import interp1d
 
 # Set the font to Times New Roman globally
 plt.rcParams['font.family'] = 'Times New Roman'
@@ -20,9 +22,10 @@ def save_figure(fig, name_prefix, figs_dir):
     fig.savefig(file_path, format='pdf')  # Save the figure in PDF format
     print(f"Figure saved as: {file_path}")  # Print the saved file's path
 
-#Part I
+# Part I: Track 1 (constant refractive index)
 # Constants for Track 1 (constant refractive index)
-n_m = 1.0  # Refractive index of the background medium (vacuum)
+n_m1 = 3.47  # Refractive index of Sphere 1
+n_m2 = 2.41  # Refractive index of Sphere 2
 r1 = 90e-9  # Radius of sphere 1 in meters
 r2 = 65e-9  # Radius of sphere 2 in meters
 wavelength = np.linspace(500, 1000, 400) * 1e-9  # Wavelength range (500 nm to 1000 nm)
@@ -34,29 +37,44 @@ def mie_coefficient(radius, wavelength, n_m):
     return a1
 
 # Calculate Mie coefficients for both spheres
-a1_sphere1 = mie_coefficient(r1, wavelength, n_m)
-a1_sphere2 = mie_coefficient(r2, wavelength, n_m)
+a1_sphere1 = mie_coefficient(r1, wavelength, n_m1)
+a1_sphere2 = mie_coefficient(r2, wavelength, n_m2)
 
 # Plot the absolute value of the polarizability for both spheres
-fig, ax = plt.subplots(figsize=(10, 10))
-ax.plot(wavelength * 1e9, np.abs(a1_sphere1), label='Sphere 1 (Track 1)', color='blue', linestyle='-', linewidth=2)
-ax.plot(wavelength * 1e9, np.abs(a1_sphere2), label='Sphere 2 (Track 1)', color='red', linestyle='--', linewidth=2)
+fig, ax = plt.subplots(figsize=(10, 10))  # Square-shaped figure
+ax.plot(wavelength * 1e9, np.abs(a1_sphere1), label=f'Sphere 1 (n={n_m1})', color='blue', linestyle='-', linewidth=2)
+ax.plot(wavelength * 1e9, np.abs(a1_sphere2), label=f'Sphere 2 (n={n_m2})', color='red', linestyle='--', linewidth=2)
 ax.set_xlabel('Wavelength (nm)', fontsize=14, fontweight='bold')
-ax.set_ylabel('Polarizability |α(λ)|', fontsize=14, fontweight='bold')
-ax.set_title('Track 1: Mie Coefficients for Dielectric Spheres', fontsize=16, fontweight='bold')
-ax.legend(fontsize=12)
+ax.set_ylabel('Polarizability |α(λ)| (C·m²/V)', fontsize=14, fontweight='bold')  # Added units to the y-axis
+ax.set_title('Track 1: Mie Coefficients for Dielectric Spheres (Constant Refractive Index)', fontsize=16, fontweight='bold')
+
+# Bold the tick labels and values
+ax.tick_params(axis='both', which='major', labelsize=12, width=2)  # Bold the ticks and make them thicker
+for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+    label.set_fontweight('bold')  # Bold the tick numbers (labels)
+
+# Remove grid lines as per your request
 ax.grid(False)
-# Save the figure with a unique name
+
+# Draw a rectangular border around the figure
+for spine in ax.spines.values():
+    spine.set_edgecolor('black')
+    spine.set_linewidth(2)
+
+# Add legend with bold font properties
+from matplotlib import font_manager
+legend_font = font_manager.FontProperties(weight='bold')
+ax.legend(fontsize=12, prop=legend_font)
+
+# Save the figure with a unique name based on timestamp
 save_figure(fig, "mie_coefficients_track1", figs_dir)
+
 # Show the figure
 plt.show()
 
-#Track 2
-import pandas as pd
-from scipy.interpolate import interp1d
-
+# Track 2: Dispersion for Crystalline Si (c-Si) for Sphere 1 only
 # Load the refractive index and extinction coefficient data for crystalline Si from CSV
-data = pd.read_csv('data\Aspnes.csv')
+data = pd.read_csv('data/Wang-25C.csv')
 
 # Extract the wavelength, n (refractive index), and k (extinction coefficient)
 wavelength_data = data['Wavelength'].values * 1e-9  # Convert to meters
@@ -74,34 +92,51 @@ k_interp = interp1d(wavelength_data, k_data, kind='cubic', fill_value="extrapola
 n_interp_values = n_interp(wavelength_simulation)
 k_interp_values = k_interp(wavelength_simulation)
 
-# Calculate the complex refractive index ˜n(λ) = n(λ) + i k(λ)
+# Calculate the complex refractive index ˜n(λ) = n(λ) + i k(λ) for Sphere 1 (only)
 n_complex = n_interp_values + 1j * k_interp_values
 
-# Calculate the dielectric function ε(λ) = ˜n(λ)^2
-epsilon = n_complex**2
-
-# Plot the Mie coefficients for Sphere 1 using the complex refractive index
+# Mie Coefficient Calculation with Dispersion for Sphere 1
 def mie_coefficient_dispersion(radius, wavelength, n_complex):
     k = 2 * np.pi / wavelength  # Wave number (k = 2π/λ)
     a1 = 6 * np.pi * 1j * (radius ** 3) * k / (3 * np.pi)  # Simplified Mie coefficient for electric dipole
     return a1 * n_complex
 
-# Calculate Mie coefficients for both spheres using the complex refractive index
+# Constants for spheres
+r1 = 90e-9  # Radius of sphere 1 in meters
+r2 = 65e-9  # Radius of sphere 2 in meters
+
+# Calculate Mie coefficients for Sphere 1 with the complex refractive index (dispersion) and Sphere 2 with constant refractive index
 a1_sphere1_disp = mie_coefficient_dispersion(r1, wavelength_simulation, n_complex)
-a1_sphere2_disp = mie_coefficient_dispersion(r2, wavelength_simulation, n_complex)
+a1_sphere2_const = mie_coefficient(r2, wavelength_simulation, 2.41)  # Use constant refractive index for Sphere 2
 
 # Plot the absolute value of the polarizability for both spheres (Track 2)
-fig, ax = plt.subplots(figsize=(10, 10))
-ax.plot(wavelength_simulation * 1e9, np.abs(a1_sphere1_disp), label='Sphere 1 (Track 2)', color='blue', linestyle='-', linewidth=2)
-ax.plot(wavelength_simulation * 1e9, np.abs(a1_sphere2_disp), label='Sphere 2 (Track 2)', color='red', linestyle='--', linewidth=2)
+fig, ax = plt.subplots(figsize=(10, 10))  # Square-shaped figure
+ax.plot(wavelength_simulation * 1e9, np.abs(a1_sphere1_disp), label=f'Sphere 1 (c-Si)', color='blue', linestyle='-', linewidth=2)
+ax.plot(wavelength_simulation * 1e9, np.abs(a1_sphere2_const), label=f'Sphere 2 (n=2.41)', color='red', linestyle='--', linewidth=2)
 ax.set_xlabel('Wavelength (nm)', fontsize=14, fontweight='bold')
-ax.set_ylabel('Polarizability |α(λ)|', fontsize=14, fontweight='bold')
+ax.set_ylabel('Polarizability |α(λ)| (C·m²/V)', fontsize=14, fontweight='bold')  # Added units to the y-axis
 ax.set_title('Track 2: Mie Coefficients for Dielectric Spheres (Dispersion)', fontsize=16, fontweight='bold')
-ax.legend(fontsize=12)
+
+# Bold the tick labels and values
+ax.tick_params(axis='both', which='major', labelsize=12, width=2)  # Bold the ticks and make them thicker
+for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+    label.set_fontweight('bold')  # Bold the tick numbers (labels)
+
+# Remove grid lines as per your request
 ax.grid(False)
+
+# Draw a rectangular border around the figure
+for spine in ax.spines.values():
+    spine.set_edgecolor('black')
+    spine.set_linewidth(2)
+
+# Add legend with bold font properties
+from matplotlib import font_manager
+legend_font = font_manager.FontProperties(weight='bold')
+ax.legend(fontsize=12, prop=legend_font)
+
 # Save the figure with a unique name based on timestamp
 save_figure(fig, "mie_coefficients_track2", figs_dir)
+
 # Show the figure
 plt.show()
-
-#Part II: Coupled-Dipole Equations
