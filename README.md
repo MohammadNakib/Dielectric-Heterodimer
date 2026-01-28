@@ -31,21 +31,10 @@ This Python project simulates the optical response of a two-sphere dielectric he
 
 ## Requirements
 
-To set up the environment and install the required libraries, run the following command:
-
-```bash
-pip install -r requirements.txt
-
-## Running the Simulation
-
 1. **Set Up the Environment**:
    - Ensure that you have **Python 3.10+** installed on your system.
    - It's recommended to use a **virtual environment** or **conda** for managing the dependencies.
    - Install the required libraries by running the following command:
-
-     ```bash
-     pip install -r requirements.txt
-     ```
 
 2. **Run the Simulation**:
    - Once the environment is set up and dependencies are installed, you can run the full simulation by executing the following command:
@@ -110,6 +99,3 @@ The final deliverable includes a **LaTeX report** (`report.tex`) which should be
 6. **Research Memo (Self-Directed Extension)**:
    - Write a half-page research memo that discusses an extension you tried with minimal guidance. This could involve adding a magnetic dipole response, exploring dispersion effects, changing the geometry, or modifying the Fano model. Describe what worked, what didn’t, and what you would do next if you had more time.
 
-## License
-
-This project is licensed under the **MIT License**. See the LICENSE file for more details.
